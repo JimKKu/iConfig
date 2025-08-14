@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# 检查并结束所有 Chrome 进程
+echo "检查并结束所有 Chrome 进程..."
+pkill -9 chrome
+
+# 用户配置目录
+CHROME_DIR="$HOME/.config/google-chrome"
+
+# 清理锁文件
+LOCK_FILES=(
+  "$CHROME_DIR/SingletonLock"
+  "$CHROME_DIR/SingletonCookie"
+  "$CHROME_DIR/SingletonSocket"
+)
+
+echo "清理 Chrome 锁文件..."
+for file in "${LOCK_FILES[@]}"; do
+  if [ -f "$file" ]; then
+    echo "删除文件：$file"
+    rm "$file"
+  else
+    echo "文件不存在：$file"
+  fi
+done
+
+# 再次检查是否有 Chrome 进程在运行
+echo "重新检查 Chrome 进程..."
+if pgrep -x "chrome" > /dev/null; then
+  echo "有 Chrome 进程仍在运行，请手动检查。"
+else
+  echo "没有残留的 Chrome 进程。"
+fi
+
+echo "清理完成。"
+

@@ -1,0 +1,130 @@
+#!/bin/bash
+
+# 可配置的保存路径
+SAVE_FILE="${HOME}/.local/chrome_config"
+
+# -c 参数用的固定网站列表
+FIXED_URLS=(
+    "https://www.google.com"
+    "https://www.bing.com"
+    "https://www.github.com"
+)
+
+# 把网址写到 Chrome 打开
+open_urls() {
+    for url in "$@"; do
+        open -na "Google Chrome" --args --new-tab "$url"
+    done
+}
+
+# 保存前n个tab并关闭它们
+save_and_close_tabs() {
+    local n=$1
+    mkdir -p "$(dirname "$SAVE_FILE")"
+
+    local all_tabs
+    all_tabs=$(osascript <<EOF
+tell application "Google Chrome"
+    set windowList to every window
+    set tabURLs to {}
+    repeat with aWindow in windowList
+        set tabList to every tab in aWindow
+        repeat with atab in tabList
+            set end of tabURLs to URL of atab
+        end repeat
+    end repeat
+    return tabURLs as text
+end tell
+EOF
+)
+
+    # 处理 AppleScript 返回，逗号分隔
+    IFS=", " read -r -a urls <<< "$all_tabs"
+
+    if [[ -z "$n" || "$n" -gt "${#urls[@]}" ]]; then
+        n=${#urls[@]}
+    fi
+
+    echo "保存 $n 个标签页到 $SAVE_FILE"
+
+    for ((i=0; i<n; i++)); do
+        echo "${urls[$i]}" >> "$SAVE_FILE"
+    done
+
+    # 关闭前n个tab
+    osascript <<EOF
+tell application "Google Chrome"
+    set closedCount to 0
+    repeat with aWindow in every window
+        set tabList to every tab in aWindow
+        set tabCount to count of tabList
+        repeat with i from tabCount to 1 by -1
+            if closedCount < $n then
+                try
+                    close tab i of aWindow
+                    set closedCount to closedCount + 1
+                end try
+            end if
+        end repeat
+    end repeat
+end tell
+EOF
+}
+
+# 打开并删除保存的URL
+open_saved_urls() {
+    local n=$1
+
+    if [[ ! -f "$SAVE_FILE" ]]; then
+        echo "没有保存的网址！"
+        exit 1
+    fi
+
+    mapfile -t urls < "$SAVE_FILE"
+
+    if [[ -z "$n" || "$n" -gt "${#urls[@]}" ]]; then
+        n=${#urls[@]}
+    fi
+
+    if [[ "$n" -eq 0 ]]; then
+        echo "没有网址要打开。"
+        exit 1
+    fi
+
+    echo "打开 $n 个网址："
+    for ((i=0; i<n; i++)); do
+        echo "${urls[$i]}"
+    done
+
+    open_urls "${urls[@]:0:n}"
+
+    # 删除已打开的n个
+    printf "%s\n" "${urls[@]:n}" > "$SAVE_FILE"
+}
+
+# 打开固定网址
+open_fixed_urls() {
+    echo "打开固定网址："
+    for url in "${FIXED_URLS[@]}"; do
+        echo "$url"
+    done
+    open_urls "${FIXED_URLS[@]}"
+}
+
+# 参数解析
+case "$1" in
+    -s)
+        save_and_close_tabs "$2"
+        ;;
+    -o)
+        open_saved_urls "$2"
+        ;;
+    -c)
+        open_fixed_urls
+        ;;
+    *)
+        echo "用法: $0 {-s [n] | -o [n] | -c}"
+        exit 1
+        ;;
+esac
+

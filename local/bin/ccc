@@ -1,0 +1,133 @@
+#!/bin/bash
+
+# ========== 用户配置区域 ==========
+# 使用标准的Bash数组语法（注意：方括号仅用于注释）
+PATHS=(               # 此处应为圆括号
+    "$HOME/.local/bin"
+    # "$HOME/.local/bin" 
+    # "/other/path"   # 添加更多路径
+)
+
+TABLE_WIDTH=100       # 表格基准宽度
+CMD_COL_RATIO=30     # 命令列宽度占比
+NO_COMMENT_TEXT="..." # 无注释显示内容
+
+# 莫兰迪配色方案
+# COLOR_TITLE='\033[38;5;111m'  # 标题色（雾蓝）
+# COLOR_CMD='\033[38;5;153m'    # 命令色（浅蓝）
+# COLOR_DESC='\033[38;5;183m'   # 描述色（香芋紫）
+# COLOR_BORDER='\033[38;5;103m' # 边框色（灰绿）
+# COLOR_RESET='\033[0m'
+# ================================
+
+# 方案2：薄荷清晨
+# COLOR_TITLE='\033[38;5;115m'  # 薄荷绿
+# COLOR_CMD='\033[38;5;195m'    # 雪白色
+# COLOR_DESC='\033[38;5;158m'   # 浅水蓝
+# COLOR_BORDER='\033[38;5;108m' # 松石绿
+
+# 方案3：樱花粉紫
+COLOR_TITLE='\033[38;5;183m'  # 浅紫色
+COLOR_CMD='\033[38;5;225m'    # 樱花粉
+COLOR_DESC='\033[38;5;189m'   # 薰衣草紫
+COLOR_BORDER='\033[38;5;139m' # 紫藤色
+#
+# 方案4：茶色暖调
+# COLOR_TITLE='\033[38;5;180m'  # 浅驼色
+# COLOR_CMD='\033[38;5;223m'    # 米白色
+# COLOR_DESC='\033[38;5;144m'   # 亚麻色
+# COLOR_BORDER='\033[38;5;101m' # 卡其色
+
+# 方案5：湖水蓝绿
+# COLOR_TITLE='\033[38;5;73m'   # 孔雀石绿
+# COLOR_CMD='\033[38;5;122m'    # 湖水蓝
+# COLOR_DESC='\033[38;5;158m'   # 浅水绿
+# COLOR_BORDER='\033[38;5;66m'  # 深青灰
+
+# 方案6：清晨灰调
+# COLOR_TITLE='\033[38;5;145m'  # 鸽子灰
+# COLOR_CMD='\033[38;5;255m'    # 纯白色
+# COLOR_DESC='\033[38;5;188m'   # 珍珠灰
+# COLOR_BORDER='\033[38;5;102m' # 水泥灰
+
+# 方案7：丁香淡紫
+# COLOR_TITLE='\033[38;5;189m'  # 丁香紫
+# COLOR_CMD='\033[38;5;225m'    # 淡粉紫
+# COLOR_DESC='\033[38;5;183m'   # 薰衣草
+# COLOR_BORDER='\033[38;5;139m' # 紫水晶
+
+# 方案8：沙滩暖黄
+# COLOR_TITLE='\033[38;5;223m'  # 浅米黄
+# COLOR_CMD='\033[38;5;230m'    # 象牙白
+# COLOR_DESC='\033[38;5;179m'   # 沙金色
+# COLOR_BORDER='\033[38;5;137m' # 陶土色
+# ========================
+
+# 注释提取函数
+extract_comment() {
+    grep -m1 "^##-- " "$1" 2>/dev/null | sed -E '
+        s/^##--[[:space:]]*//;
+        s/[[:space:]]+$//;
+        :a;N;$!ba;s/\n/ ➝ /g
+    ' | tr -s ' ' || echo "$NO_COMMENT_TEXT"
+}
+
+# 智能截断算法
+smart_trunc() {
+    local str=$1 max=$2 len=0 result=""
+    for ((i=0; i<${#str}; i++)); do
+        char=${str:i:1}
+        char_width=$([[ $char =~ [^[:ascii:]] ]] && echo 2 || echo 1)
+        ((len + char_width > max)) && break
+        result+="$char"
+        len=$((len + char_width))
+    done
+    ((i < ${#str})) && result+="..."
+    echo "$result"
+}
+
+# 绘制表格组件
+draw_table() {
+    local path=$1
+    local term_width=$(tput cols)
+    local final_width=$(( TABLE_WIDTH < term_width ? TABLE_WIDTH : term_width ))
+    local cmd_width=$(( final_width * CMD_COL_RATIO / 100 ))
+    local desc_width=$(( final_width - cmd_width - 3 ))
+
+    # 路径标题（无边框）
+    echo -e "\n${COLOR_TITLE}📂 $path${COLOR_RESET}"
+    
+    # 表格顶部边框
+    echo -e "${COLOR_BORDER}┌$(printf '─%.0s' $(seq 1 $cmd_width))┬$(printf '─%.0s' $(seq 1 $desc_width))┐"
+    
+    # 表头行
+    printf "${COLOR_BORDER}│${COLOR_CMD}%-${cmd_width}s${COLOR_BORDER}│${COLOR_DESC}%-${desc_width}s${COLOR_BORDER}│\n" \
+        " Command" " Description"
+    
+    # 表头分隔线
+    echo -e "${COLOR_BORDER}├$(printf '─%.0s' $(seq 1 $cmd_width))┼$(printf '─%.0s' $(seq 1 $desc_width))┤"
+
+    # 遍历可执行文件
+    # find "$path" -maxdepth 1 -type f -executable -print | while read -r file; do
+    find "$HOME/.local/bin" -type f -perm -111 2>/dev/null | while read -r file; do
+        cmd=$(basename "$file")
+        comment=$(extract_comment "$file")
+        display_desc=$(smart_trunc "$comment" $desc_width)
+        
+        printf "${COLOR_BORDER}│${COLOR_CMD}%-${cmd_width}s${COLOR_BORDER}│${COLOR_DESC}%-${desc_width}s${COLOR_BORDER}│\n" \
+            " $cmd" " $display_desc"
+    done
+
+    # 表格底部
+    echo -e "${COLOR_BORDER}└$(printf '─%.0s' $(seq 1 $cmd_width))┴$(printf '─%.0s' $(seq 1 $desc_width))┘${COLOR_RESET}"
+}
+
+# 主程序
+# clear
+for path in "${PATHS[@]}"; do
+    if [ -d "$path" ]; then
+        draw_table "$path"
+    else
+        echo -e "${COLOR_TITLE}⚠ 路径不存在: $path${COLOR_RESET}"
+    fi
+done

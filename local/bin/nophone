@@ -1,0 +1,28 @@
+#!/bin/bash
+
+RULE_PATH="/etc/udev/rules.d/90-disable-mtp.rules"
+
+disable_mtp_rule='
+# Disable MTP/PTP to avoid connection popup
+ACTION=="add", SUBSYSTEM=="usb", ENV{ID_MEDIA_PLAYER}=="1", ENV{ID_MTP_DEVICE}=="1", ENV{UDISKS_IGNORE}="1"
+'
+
+if [[ $EUID -ne 0 ]]; then
+  echo "请使用 sudo 运行此脚本。"
+  exit 1
+fi
+
+if [ -f "$RULE_PATH" ]; then
+  echo "检测到禁用规则，正在启用 MTP 连接提示..."
+  rm "$RULE_PATH"
+  udevadm control --reload-rules
+  udevadm trigger
+  echo "已启用 MTP 提示。"
+else
+  echo "检测到 MTP 提示已启用，正在禁用..."
+  echo "$disable_mtp_rule" > "$RULE_PATH"
+  udevadm control --reload-rules
+  udevadm trigger
+  echo "已禁用 MTP 提示，仅保留充电功能。"
+fi
+

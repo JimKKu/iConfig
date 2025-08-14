@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ !$1 ]; then
+    deploy getres pods -n cpufp-biz -o wide
+    exit 1
+fi
+
+if [[ "$1" == "biz" ]]; then
+    deploy getres pods -n cpufp-biz -o wide
+elif [[ "$1" == "plat" ]]; then
+    deploy getres pods -n cpufp-plat -o wide
+else
+    echo "用法: $0 [-biz | -plat]"
+    exit 1
+fi
+

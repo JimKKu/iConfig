@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# 设置本地语言以防中文名设备无法识别（可选）
+export LANG=zh_CN.UTF-8
+export LC_ALL=zh_CN.UTF-8
+
+# 获取触控板设备名称或ID（模糊匹配，避免不同品牌设备名不一致的问题）
+device_name=$(xinput list | grep -i 'touchpad' | grep -oP 'id=\K\d+')
+
+if [ -z "$device_name" ]; then
+  echo "未找到触控板设备，请确保设备连接并启用了X服务器。"
+  exit 1
+fi
+
+# 获取当前状态（0表示禁用，1表示启用）
+enabled=$(xinput list-props "$device_name" | grep "Device Enabled" | awk '{print $NF}')
+
+if [ "$enabled" -eq 1 ]; then
+  echo "触控板已启用，正在禁用..."
+  xinput disable "$device_name"
+else
+  echo "触控板已禁用，正在启用..."
+  xinput enable "$device_name"
+fi
+
