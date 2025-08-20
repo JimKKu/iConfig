@@ -44,4 +44,7 @@ cat >> ~/.zshrc << EOF
 # JimKKu | tmux conf
 tmux source ~/.config/tmux/tmux.conf
 EOF
+
+source ~/.zshrc
 ```
+
