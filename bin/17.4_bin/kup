@@ -1,0 +1,52 @@
+#!/bin/bash
+
+set -e
+
+cd /app/build_img
+
+# 文件路径
+IMG_INFO_FILE="fenhang_image_info/fenhang_img_info.txt"
+VALUES_FILE="helm_fenhang/cpufp-biz/values.yaml"
+CHART_FILE="helm_fenhang/cpufp-biz/Chart.yaml"
+
+# 检查版本号文件存在
+if [[ ! -f $IMG_INFO_FILE ]]; then
+  echo "ERROR: 找不到 $IMG_INFO_FILE"
+  exit 1
+fi
+
+# 1. 获取原始版本号
+ORIGINAL_TAG=$(grep '^img_tag=' "$IMG_INFO_FILE" | cut -d= -f2)
+if [[ -z "$ORIGINAL_TAG" ]]; then
+  echo "ERROR: 无法从 $IMG_INFO_FILE 获取 img_tag"
+  exit 1
+fi
+
+IFS='.' read -r major minor patch <<< "$ORIGINAL_TAG"
+if ! [[ "$patch" =~ ^[0-9]+$ ]]; then
+  echo "ERROR: 版本号格式不正确：$ORIGINAL_TAG"
+  exit 1
+fi
+
+# 2. 版本号+1
+NEW_PATCH=$((patch + 1))
+NEW_TAG="${major}.${minor}.${NEW_PATCH}"
+
+echo "旧版本号: $ORIGINAL_TAG"
+echo "新版本号: $NEW_TAG"
+
+# 3. 修改 values.yaml 中 image.tag 行
+sed -i -E "s/(tag:[[:space:]]*\")[0-9]+\.[0-9]+\.[0-9]+(\"?)/\1${NEW_TAG}\2/" "$VALUES_FILE"
+
+# 4. 修改 Chart.yaml 中 version 和 appVersion 行（保留+0）
+sed -i -E "s/^(version:[[:space:]]*)[0-9]+\.[0-9]+\.[0-9]+/\1${NEW_TAG}/" "$CHART_FILE"
+sed -i -E "s/^(appVersion:[[:space:]]*\")[0-9]+\.[0-9]+\.[0-9]+/\1${NEW_TAG}/" "$CHART_FILE"
+
+# 5. 更新 image_info.txt 中的版本号
+sed -i "s/^img_tag=.*/img_tag=${NEW_TAG}/" "$IMG_INFO_FILE"
+
+echo "✅ 所有文件更新完成，版本号已变为: $NEW_TAG"
+
+echo "✅  开始更新 --------- "
+
+buildimg fenhang && deploy upgrade cpufp-biz /app/build_img/helm_fenhang/cpufp-biz/ && kwatch 1

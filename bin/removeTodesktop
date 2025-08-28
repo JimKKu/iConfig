@@ -1,0 +1,5 @@
+#!/bin/bash
+
+##-- Autoremove ToDesktop
+
+sudo apt autoremove todesk -y

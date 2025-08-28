@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sudo chown root:root /opt/Termius/chrome-sandbox
+sudo chmod 4755 /opt/Termius/chrome-sandbox
+

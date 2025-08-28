@@ -1,0 +1,5 @@
+#!/bin/bash
+
+##-- - Restart network of tyyfzjjg
+
+sudo docker restart frpc && sudo docker restart nginx

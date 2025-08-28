@@ -1,0 +1,9 @@
+#!/bin/bash
+
+
+#!/bin/bash
+
+namespace="cpufp-$1"
+shift  # 移除第一个参数，让后续 $@ 是 pod 名列表
+
+kubectl delete pods -n "$namespace" "$@"

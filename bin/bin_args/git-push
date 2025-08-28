@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# 获取提交信息参数，如果没有就使用默认
+commit_msg="${1:-Default Push}"
+
+# 确保脚本支持中文（尤其是在某些终端环境）
+export LANG=zh_CN.UTF-8
+export LC_ALL=zh_CN.UTF-8
+
+# 执行 git 提交和推送
+git add . && git commit -m "$commit_msg" && git push
+

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+##-- Reinstall Google Chrome
+sudo apt autoremove google-chrome-stable -y && sudo dpkg -i ~/.local/pkgs/googleChrome.deb
