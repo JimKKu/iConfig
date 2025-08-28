@@ -1,3 +1,0 @@
-#!/bin/bash
-
-sshpass -p 'rgshbk' scp -oKexAlgorithms=+diffie-hellman-group14-sha1 -oHostKeyAlgorithms=+ssh-rsa -r $1 rgshbk@20.144.0.32:/home/rgshbk/test/

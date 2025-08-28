@@ -1,4 +1,0 @@
-#!/bin/bash
-
-kubectl exec -it $2 -n cpufp-$1 -- /bin/bash
-

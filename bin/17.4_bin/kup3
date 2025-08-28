@@ -1,3 +1,0 @@
-#!/bin/bash
-
-buildimg fenhang && deploy upgrade cpufp-biz /app/build_img/helm_fenhang/cpufp-biz/ && kwatch 1

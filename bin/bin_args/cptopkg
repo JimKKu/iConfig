@@ -1,3 +1,0 @@
-#!/bin/bash
-
-sshpass -p 'Cpufp@12#' scp -oKexAlgorithms=+diffie-hellman-group14-sha1 -oHostKeyAlgorithms=+ssh-rsa -r $1 appprod@20.145.17.4:/app/build_img/fenhang_pkg_dir/
